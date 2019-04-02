@@ -39,6 +39,8 @@ func crawl(xpath string, ch chan string) chan string {
 	return results
 }
 
+// 爬虫v1版：指定列表页的详情url xpath，以及详情页的内容xpath进行爬取
+// 通过select超时进行任务的停止
 func Crawler() {
 	ch := make(chan string)
 	// add page urls
