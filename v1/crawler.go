@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// parse web page with xpath
 func parse(body io.ReadCloser, xpath string, results chan string) {
 	defer body.Close()
 	doc, err := htmlquery.Parse(body)
@@ -21,6 +22,7 @@ func parse(body io.ReadCloser, xpath string, results chan string) {
 	}
 }
 
+// get web page via http
 func crawl(xpath string, ch chan string) chan string {
 	results := make(chan string)
 	go func() {
