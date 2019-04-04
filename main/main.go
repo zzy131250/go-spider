@@ -1,7 +1,9 @@
 package main
 
-import "github.com/zzy131250/go-spider/v1"
+import (
+	v2 "github.com/zzy131250/go-spider/v2"
+)
 
 func main() {
-	v1.Crawler()
+	v2.Crawler()
 }
