@@ -23,16 +23,18 @@ func parse(ctx context.Context, body io.ReadCloser, label map[string]string, res
 			// select attribute
 			result, _ := selection.Attr(attr)
 			select {
-			case results <- strings.TrimSpace(result):
 			case <-ctx.Done():
 				fmt.Println("request timeout, stop parse")
+			default:
+				results <- strings.TrimSpace(result)
 			}
 		} else {
 			// select text
 			select {
-			case results <- strings.TrimSpace(selection.Text()):
 			case <-ctx.Done():
 				fmt.Println("request timeout, stop parse")
+			default:
+				results <- strings.TrimSpace(selection.Text())
 			}
 		}
 	})
