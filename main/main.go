@@ -1,9 +1,9 @@
 package main
 
 import (
-	v2 "github.com/zzy131250/go-spider/v2"
+	v3 "github.com/zzy131250/go-spider/v3"
 )
 
 func main() {
-	v2.Crawler()
+	v3.Crawler()
 }
