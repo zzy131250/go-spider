@@ -25,6 +25,7 @@ func init() {
 	}
 }
 
+// http get by proxy
 func proxyGet(url string) (resp *http.Response, err error) {
 	var requestSuccess bool
 
@@ -37,8 +38,8 @@ func proxyGet(url string) (resp *http.Response, err error) {
 	for i := 0; i < 5; i++ {
 		resp, err = client.Do(request)
 		if err != nil {
-			fmt.Println(err)
-			return nil, errors.New("proxy may not work")
+			fmt.Println(errors.Wrap(err, ErrProxyMayNotWork.Error()))
+			return nil, ErrProxyMayNotWork
 		}
 		if resp.StatusCode == http.StatusOK {
 			requestSuccess = true
@@ -48,16 +49,17 @@ func proxyGet(url string) (resp *http.Response, err error) {
 	}
 
 	if !requestSuccess {
-		fmt.Println("proxy may not work")
-		return nil, errors.New("proxy may not work")
+		fmt.Println(ErrProxyMayNotWork.Error())
+		return nil, ErrProxyMayNotWork
 	}
 	return
 }
 
+// get a proxy http client
 func getProxyClient() *http.Client {
 	resp, err := http.Get(fmt.Sprintf("%s/get/", proxyPoolUrl))
 	if err != nil {
-		fmt.Println("get proxy url err")
+		fmt.Println(errors.Wrap(err, "get proxy url err"))
 		return nil
 	}
 	if resp == nil {

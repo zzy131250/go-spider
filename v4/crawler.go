@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/pkg/errors"
 	"io"
 	"math/rand"
 	"strings"
@@ -15,7 +16,7 @@ func parse(ctx context.Context, body io.ReadCloser, label map[string]string, res
 	defer body.Close()
 	doc, err := goquery.NewDocumentFromReader(body)
 	if err != nil {
-		fmt.Println("parse body error")
+		fmt.Println(errors.Wrap(err, "parse body error"))
 		return
 	}
 	doc.Find(label["label"]).Each(func(i int, selection *goquery.Selection) {
@@ -51,7 +52,7 @@ func limiter(limitFunc func()) {
 }
 
 // get web page via http
-func crawl(ctx context.Context, url string, label map[string]string, results chan string) {
+func crawl(ctx context.Context, url string, label map[string]string, sources chan string, results chan string) {
 	select {
 	case <-ctx.Done():
 		fmt.Println("request timeout, stop http request")
@@ -61,12 +62,15 @@ func crawl(ctx context.Context, url string, label map[string]string, results cha
 	limiter(func() {
 		fmt.Printf("start crawl url: %s\n", url)
 		resp, err := proxyGet(url)
-		if err != nil && err.Error() == "proxy may not work" {
-			// todo 重新放入channel
+		if err != nil && err == ErrProxyMayNotWork {
+			// 重新放入channel
+			fmt.Printf("proxy not work, put url back into channel: %s\n", url)
+			time.Sleep(time.Second)
+			sources <- url
 			return
 		}
 		if err != nil {
-			fmt.Printf("crawl url error: %s\n", url)
+			fmt.Println(errors.Wrap(err, "crawl url error"))
 			return
 		}
 		go parse(ctx, resp.Body, label, results)
@@ -74,12 +78,12 @@ func crawl(ctx context.Context, url string, label map[string]string, results cha
 }
 
 func crawlWithContext(parent context.Context, label map[string]string, ch chan string) chan string {
-	results := make(chan string, 100)
-	// set timeout context, 30s
-	ctx, _ := context.WithTimeout(parent, timeout*2)
+	results := make(chan string, chanSize)
 	go func() {
 		for url := range ch {
-			go crawl(ctx, url, label, results)
+			// set timeout context for each request, 30s
+			ctx, _ := context.WithTimeout(parent, timeout*2)
+			go crawl(ctx, url, label, ch, results)
 		}
 	}()
 	return results
@@ -87,8 +91,10 @@ func crawlWithContext(parent context.Context, label map[string]string, ch chan s
 
 // 爬虫v4版：
 // 1. 添加代理和http头
+// 2. 改进错误处理
+// 3. url爬取失败重试
 func Crawler() {
-	ch := make(chan string)
+	ch := make(chan string, chanSize)
 	ctx := context.Background()
 	// add page urls
 	go func() {
